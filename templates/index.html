@@ -1,0 +1,64 @@
+<!-- templates/index.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Remote Desktop Stream</title>
+</head>
+<body>
+    <img id="stream" alt="Remote Desktop Stream">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.2.0/socket.io.js"></script>
+    <script>
+        var socket = io.connect('http://192.168.0.109:5000');  // Replace with your server's IP and port
+
+        socket.on('stream', function(data) {
+            document.getElementById('stream').src = 'data:image/jpeg;base64,' + data;
+        });
+
+        socket.on('stream_thread_started', function() {
+            console.log('Screen streaming thread started.');
+        });
+
+        document.addEventListener('keydown', function(event) {
+            socket.emit('keyboard_event', { event: 'press', key: event.key });
+        });
+
+        document.addEventListener('keyup', function(event) {
+            socket.emit('keyboard_event', { event: 'release', key: event.key });
+        });
+
+        document.addEventListener('click', function(event) {
+            socket.emit('mouse_event', { event: 'click', button: event.button });
+        });
+
+        // Add touch event handling
+        var touchStartX, touchStartY;
+
+        document.addEventListener('touchstart', function(event) {
+            touchStartX = event.touches[0].clientX;
+            touchStartY = event.touches[0].clientY;
+        });
+
+        document.addEventListener('touchmove', function(event) {
+            var touchX = event.touches[0].clientX;
+            var touchY = event.touches[0].clientY;
+
+            // Calculate the distance moved
+            var deltaX = touchX - touchStartX;
+            var deltaY = touchY - touchStartY;
+
+            // Send touch move data to the server
+            socket.emit('touch_event', { deltaX: deltaX, deltaY: deltaY });
+
+            // Update the starting position for the next move
+            touchStartX = touchX;
+            touchStartY = touchY;
+        });
+
+        document.addEventListener('touchend', function(event) {
+            // Handle touch end if needed
+        });
+    </script>
+</body>
+</html>
